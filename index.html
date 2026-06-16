@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ACPI Overview — Qualcomm SM8480 (Glymur)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.75;
+  background:#0d1117;color:#c9d1d9;
+  display:flex;min-height:100vh;
+}
+
+/* ── Sidebar TOC ── */
+#toc{
+  position:sticky;top:0;height:100vh;overflow-y:auto;
+  width:270px;min-width:220px;flex-shrink:0;
+  background:#0d1117;border-right:1px solid #21262d;
+  padding:24px 16px 40px;font-size:13px;
+}
+#toc h2{
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:#8b949e;margin-bottom:12px;padding-bottom:6px;
+  border-bottom:1px solid #21262d;
+}
+.toc-root{list-style:none;padding:0}
+.toc-root li{margin:0}
+.toc-root a{
+  display:block;padding:3px 6px;border-radius:4px;
+  color:#8b949e;text-decoration:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.toc-root a:hover{background:#161b22;color:#c9d1d9}
+.toc-l2{padding-left:0px;font-weight:600;color:#c9d1d9;margin-top:6px}
+.toc-l2 a{color:#cdd9e5;font-weight:600}
+.toc-l3{padding-left:14px}
+.toc-l4{padding-left:26px;font-size:12px}
+
+/* ── Main content ── */
+#content{
+  flex:1;min-width:0;
+  padding:40px 48px 80px;
+  max-width:960px;
+}
+
+h1{font-size:1.9em;border-bottom:2px solid #30363d;padding-bottom:10px;
+   margin:36px 0 16px;color:#e6edf3}
+h2{font-size:1.45em;border-bottom:1px solid #21262d;padding-bottom:8px;
+   margin:32px 0 12px;color:#e6edf3}
+h3{font-size:1.15em;margin:24px 0 10px;color:#e6edf3}
+h4{font-size:1em;margin:18px 0 8px;color:#cdd9e5;font-style:italic}
+p{margin:10px 0}
+
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+
+blockquote{
+  border-left:4px solid #388bfd;padding:8px 16px;margin:14px 0;
+  background:#161b22;color:#8b949e;border-radius:0 4px 4px 0
+}
+
+code{
+  font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  font-size:.87em;background:#161b22;color:#f0883e;
+  padding:2px 5px;border-radius:4px;border:1px solid #30363d
+}
+pre{
+  background:#161b22;border:1px solid #30363d;border-radius:6px;
+  padding:16px;overflow-x:auto;margin:14px 0;line-height:1.5
+}
+pre code{background:transparent;border:none;padding:0;color:#c9d1d9;font-size:.84em}
+
+table{
+  border-collapse:collapse;width:100%;margin:16px 0;font-size:.88em;
+  display:block;overflow-x:auto
+}
+thead tr{background:#1c2128}
+th{border:1px solid #30363d;padding:7px 12px;text-align:left;
+   color:#e6edf3;font-weight:600;white-space:nowrap;background:#1c2128}
+td{border:1px solid #30363d;padding:6px 12px;vertical-align:top}
+tr:nth-child(even){background:#161b22}
+tr:nth-child(odd){background:#0d1117}
+
+ul,ol{padding-left:24px;margin:10px 0}
+li{margin:4px 0}
+hr{border:none;border-top:1px solid #21262d;margin:28px 0}
+
+/* ── Responsive: collapse sidebar on narrow screens ── */
+@media(max-width:820px){
+  #toc{display:none}
+  #content{padding:24px 20px 60px}
+}
+</style>
+</head>
+<body>
+<nav id="toc"><h2>Contents</h2><ol class="toc-root">
+<li class="toc-l2"><a href="#1-what-is-acpi">1. What Is ACPI?</a></li>
+<li class="toc-l3"><a href="#core-design-principle">Core Design Principle</a></li>
+<li class="toc-l2"><a href="#2-acpi-table-architecture">2. ACPI Table Architecture</a></li>
+<li class="toc-l3"><a href="#21-table-hierarchy">2.1 Table Hierarchy</a></li>
+<li class="toc-l3"><a href="#22-table-descriptions">2.2 Table Descriptions</a></li>
+<li class="toc-l4"><a href="#rsdp-root-system-description-pointer">RSDP — Root System Description Pointer</a></li>
+<li class="toc-l4"><a href="#xsdt-extended-system-description-table">XSDT — Extended System Description Table</a></li>
+<li class="toc-l4"><a href="#fadt-fixed-acpi-description-table">FADT — Fixed ACPI Description Table</a></li>
+<li class="toc-l4"><a href="#dsdt-differentiated-system-description-table">DSDT — Differentiated System Description Table</a></li>
+<li class="toc-l4"><a href="#madt-multiple-apic-description-table">MADT — Multiple APIC Description Table</a></li>
+<li class="toc-l4"><a href="#gtdt-generic-timer-description-table">GTDT — Generic Timer Description Table</a></li>
+<li class="toc-l4"><a href="#iort-io-remapping-table">IORT — IO Remapping Table</a></li>
+<li class="toc-l4"><a href="#csrt-core-system-resource-table">CSRT — Core System Resource Table</a></li>
+<li class="toc-l4"><a href="#pptt-processor-properties-topology-table">PPTT — Processor Properties Topology Table</a></li>
+<li class="toc-l4"><a href="#spcr-serial-port-console-redirection-table">SPCR — Serial Port Console Redirection Table</a></li>
+<li class="toc-l4"><a href="#dbg2-debug-port-table-2">DBG2 — Debug Port Table 2</a></li>
+<li class="toc-l4"><a href="#ssdt-secondary-system-description-table">SSDT — Secondary System Description Table</a></li>
+<li class="toc-l2"><a href="#3-xbl-uefi-hlos-boot-flow">3. XBL → UEFI → HLOS Boot Flow</a></li>
+<li class="toc-l2"><a href="#4-acpi-namespace-and-driver-binding">4. ACPI Namespace and Driver Binding</a></li>
+<li class="toc-l3"><a href="#41-namespace-structure">4.1 Namespace Structure</a></li>
+<li class="toc-l3"><a href="#42-driver-binding-chain">4.2 Driver Binding Chain</a></li>
+<li class="toc-l3"><a href="#43-resource-acquisition-in-acpi-mode">4.3 Resource Acquisition in ACPI Mode</a></li>
+<li class="toc-l2"><a href="#5-key-acpi-apis-kernel-sequencing">5. Key ACPI APIs — Kernel Sequencing</a></li>
+<li class="toc-l3"><a href="#51-boot-time-acpi-init-sequence">5.1 Boot-Time ACPI Init Sequence</a></li>
+<li class="toc-l2"><a href="#6-glymur-acpi-bringup-issues-encountered-and-fixes">6. Glymur ACPI Bringup — Issues Encountered and Fixes</a></li>
+<li class="toc-l3"><a href="#61-uefi-issues">6.1 UEFI Issues</a></li>
+<li class="toc-l4"><a href="#issue-a-spsstmemcp-auth-failure-smmu-unidentified-stream-fault">Issue A — SPSS/TME/MCP Auth Failure → SMMU Unidentified Stream Fault</a></li>
+<li class="toc-l4"><a href="#issue-b-uefi-variable-boot-path-selection">Issue B — UEFI Variable / Boot Path Selection</a></li>
+<li class="toc-l3"><a href="#62-kernel-config">6.2 Kernel Config</a></li>
+<li class="toc-l4"><a href="#issue-acpi-namespace-load-fails-without-config-acpi-reduced-hardware-only">Issue — ACPI Namespace Load Fails Without CONFIG_ACPI_REDUCED_HARDWARE_ONLY</a></li>
+<li class="toc-l3"><a href="#63-kernel-driver-changes">6.3 Kernel Driver Changes</a></li>
+<li class="toc-l4"><a href="#fix-a-driverssocqcomqcom-geni-sec">Fix A — drivers/soc/qcom/qcom-geni-se.c</a></li>
+<li class="toc-l4"><a href="#fix-b-driversttyserialqcom-geni-serialc-3-fixes">Fix B — drivers/tty/serial/qcom_geni_serial.c (3 fixes)</a></li>
+<li class="toc-l4"><a href="#fix-c-driversacpiacpicatbxfloadc">Fix C — drivers/acpi/acpica/tbxfload.c</a></li>
+<li class="toc-l3"><a href="#64-ramdisk-uart21-ssdt-injection-workaround">6.4 Ramdisk — UART21 SSDT Injection (Workaround)</a></li>
+<li class="toc-l3"><a href="#65-kernel-command-line">6.5 Kernel Command Line</a></li>
+<li class="toc-l3"><a href="#66-issue-summary-table-while-boot-on-glymur">6.6 Issue Summary Table while boot on Glymur</a></li>
+<li class="toc-l2"><a href="#7-dt-vs-acpi-mode-comparison">7. DT vs ACPI Mode Comparison</a></li>
+<li class="toc-l2"><a href="#8-missing-tables-that-can-be-introduced-purely-in-uefi">8. Missing tables that can be introduced purely in UEFI</a></li>
+<li class="toc-l2"><a href="#9-acpi-power-and-resource-management">9. ACPI Power and Resource Management</a></li>
+<li class="toc-l2"><a href="#10-limitaions-of-full-acpi-on-qualcomm-socs">10. Limitaions of Full ACPI on Qualcomm SoCs</a></li>
+</ol></nav>
+<div id="content">
+<h1 id="acpi-overview">ACPI Overview:</h1>
+<blockquote>
+<p>Platform context: Qualcomm SM8480 (Glymur), ARM64, HW-Reduced ACPI (no legacy IO).<br />
+Applicable to any ARM64 ACPI platform; Qualcomm-specific notes are called out.</p>
+</blockquote>
+<hr />
+<h2 id="1-what-is-acpi">1. What Is ACPI?</h2>
+<p><strong>ACPI (Advanced Configuration and Power Interface)</strong> is an open standard that defines<br />
+how firmware describes hardware to the operating system. It covers:</p>
+<ul>
+<li><strong>Hardware topology description</strong> — what devices exist, where they are (MMIO base,<br />
+  IRQ, DMA)</li>
+<li><strong>Power management</strong> — device power states (D0/D3), system sleep states (S0/S5),<br />
+  CPU idle (C-states), CPU frequency (P-states)</li>
+<li><strong>Configuration</strong> — boot-time device parameters, shared resource description</li>
+</ul>
+<h3 id="core-design-principle">Core Design Principle</h3>
+<blockquote>
+<p><strong>Firmware initializes hardware. OS reads ACPI tables to discover what firmware left<br />
+running.</strong></p>
+</blockquote>
+<p>This is the fundamental difference from Device Tree:</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Device Tree</th>
+<th>ACPI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Philosophy</td>
+<td>Describe hardware; kernel owns init</td>
+<td>Firmware inits hardware; OS observes</td>
+</tr>
+<tr>
+<td>Clock management</td>
+<td>Kernel calls <code>clk_set_rate()</code></td>
+<td>Firmware set clocks; driver uses <code>fixed_clk_rate</code></td>
+</tr>
+<tr>
+<td>Bus init</td>
+<td>Kernel calls <code>icc_set_bw()</code> via DT nodes</td>
+<td>Skipped or handled via SCMI</td>
+</tr>
+<tr>
+<td>Update mechanism</td>
+<td>DTB blob updated in firmware image</td>
+<td>ACPI tables loaded from partition at boot</td>
+</tr>
+<tr>
+<td>Namespace</td>
+<td>DT compatible strings</td>
+<td>ACPI <code>_HID</code> / <code>_CID</code> strings</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-acpi-table-architecture">2. ACPI Table Architecture</h2>
+<h3 id="21-table-hierarchy">2.1 Table Hierarchy</h3>
+<p>On Qualcomm platforms, ACPI tables are compiled into <code>acpi.lzma</code> and stored in<br />
+the <code>BOOT_FW2</code> partition. In uefi the lzma converted to <code>acpi.elf</code> and passed to HLOS.<br />
+Below is the structure of acpi file.</p>
+<pre><code>RSDP  (Root System Description Pointer)
+  └── XSDT  (Extended System Description Table)
+        ├── FADT  (Fixed ACPI Description Table)  →  DSDT, FACS
+        ├── MADT  (Multiple APIC Description Table)
+        ├── GTDT  (Generic Timer Description Table)
+        ├── IORT  (IO Remapping Table)
+        ├── CSRT  (Core System Resource Table)
+        ├── PPTT  (Processor Properties Topology Table)
+        ├── SPCR  (Serial Port Console Redirection Table)
+        ├── DBG2  (Debug Port Table 2)
+        └── SSDTs (Secondary System Description Tables) — optional/dynamic
+</code></pre>
+<p>RSDP is the single anchor the OS searches for. On ARM64 EFI, it is placed in the<br />
+EFI System Table's Configuration Table (GUID <code>EFI_ACPI_20_TABLE_GUID</code>).</p>
+<hr />
+<h3 id="22-table-descriptions">2.2 Table Descriptions</h3>
+<h4 id="rsdp-root-system-description-pointer">RSDP — Root System Description Pointer</h4>
+<p>The entry point. Firmware places it in EFI System Table on UEFI platforms.</p>
+<pre><code>Signature: &quot;RSD PTR &quot;  (8 bytes, no null terminator)
+Fields: OEMID, revision, RSDT address (ACPI 1.0), XSDT address (ACPI 2.0+)
+</code></pre>
+<p>Linux finds it via:</p>
+<pre><code class="language-c">// arch/x86/kernel/setup.c  /  arch/arm64/kernel/acpi.c
+efi_get_rsdp_addr() → acpi_os_get_root_pointer()
+</code></pre>
+<hr />
+<h4 id="xsdt-extended-system-description-table">XSDT — Extended System Description Table</h4>
+<p>Points to all other top-level tables. Array of 64-bit physical addresses.</p>
+<pre><code class="language-c">struct acpi_table_xsdt {
+    struct acpi_table_header header;   // Signature &quot;XSDT&quot;
+    u64 table_offset_entry[1];         // array of pointers to other tables
+};
+</code></pre>
+<hr />
+<h4 id="fadt-fixed-acpi-description-table">FADT — Fixed ACPI Description Table</h4>
+<p>Describes fixed hardware: power management registers, reset register, sleep control.</p>
+<p>Key fields for ARM64 HW-Reduced ACPI:</p>
+<pre><code>Flags:
+  HW_REDUCED_ACPI (bit 20) = 1   → No legacy PM1a/PM1b IO registers
+                                    ARM64 always sets this
+  LOW_POWER_S0_IDLE (bit 21)     → Modern standby capable
+DSDT pointer: 8-byte physical address of DSDT
+</code></pre>
+<hr />
+<h4 id="dsdt-differentiated-system-description-table">DSDT — Differentiated System Description Table</h4>
+<p>The <strong>main device namespace</strong>. Written in ACPI Source Language (ASL), compiled to<br />
+AML bytecode. Contains all Device() objects under <code>\_SB</code> (System Bus).</p>
+<pre><code class="language-asl">DefinitionBlock (&quot;dsdt.aml&quot;, &quot;DSDT&quot;, 2, &quot;QCOM&quot;, &quot;GLYMUR&quot;, 0x00000001) {
+    Scope (\_SB) {
+        Device (COM0) {                      // UART device
+            Name (_HID, &quot;QCOM0E02&quot;)          // Hardware ID — driver match key
+            Name (_UID, 0)                   // Unique ID
+            Name (_STA, 0xF)                 // Status: present + enabled
+            Name (_CRS, ResourceTemplate() {
+                Memory32Fixed(ReadWrite,
+                    0x00894000,              // MMIO base
+                    0x00004000)              // Size
+                Interrupt(ResourceConsumer, Level, ActiveHigh, Exclusive) { 0x26B }
+            })
+        }
+    }
+}
+</code></pre>
+<p><strong>Key DSDT objects:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Object</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_HID</code></td>
+<td>Primary hardware ID (PNP or ACPI ID string) — driver binding</td>
+</tr>
+<tr>
+<td><code>_CID</code></td>
+<td>Compatible ID list — secondary match</td>
+</tr>
+<tr>
+<td><code>_UID</code></td>
+<td>Unique instance ID</td>
+</tr>
+<tr>
+<td><code>_CRS</code></td>
+<td>Current Resource Settings — MMIO ranges, IRQs, DMA</td>
+</tr>
+<tr>
+<td><code>_STA</code></td>
+<td>Device status bitmask (present / enabled / shown in UI / functional)</td>
+</tr>
+<tr>
+<td><code>_DSM</code></td>
+<td>Device Specific Method — arbitrary firmware RPC</td>
+</tr>
+<tr>
+<td><code>_DSD</code></td>
+<td>Device Specific Data — key/value property bag (replaces DT properties)</td>
+</tr>
+<tr>
+<td><code>_PS0/_PS3</code></td>
+<td>Power state methods: D0 (full on) / D3 (off)</td>
+</tr>
+<tr>
+<td><code>_CPC</code></td>
+<td>Collaborative Processor Performance Control — CPU freq registers</td>
+</tr>
+<tr>
+<td><code>_PXM</code></td>
+<td>Proximity domain — NUMA topology</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h4 id="madt-multiple-apic-description-table">MADT — Multiple APIC Description Table</h4>
+<p>CPU and interrupt controller topology.</p>
+<pre><code>Entry types on ARM64:
+  Type 0x0B: GIC CPU interface entry — one per CPU
+             Fields: CPU interface number, MPIDR (affinity), GICC base PA
+  Type 0x0C: GIC Distributor (GICD) — one entry
+             Fields: physical base address, GIC version
+  Type 0x0E: GIC Redistributor (GICR) — describes GICR range
+  Type 0x0F: GIC ITS (Interrupt Translation Service) — for MSI
+</code></pre>
+<p>Linux use: <code>early_acpi_boot_init()</code> reads MADT to:<br />
+- Count CPUs → pass to <code>smp_init()</code><br />
+- Get GIC base addresses → register GIC driver<br />
+- Get timer interrupt lines → <code>arch_timer_acpi_init()</code></p>
+<hr />
+<h4 id="gtdt-generic-timer-description-table">GTDT — Generic Timer Description Table</h4>
+<p>ARM Generic Timer (arch timer) configuration.</p>
+<pre><code>Fields:
+  CounterControlBaseAddress  — CNTCTL physical address
+  SecurePL1Timer interrupt   — EL1 secure timer IRQ
+  NonSecurePL1Timer          — EL1 NS timer IRQ (most kernels use this)
+  VirtualTimer               — Virtual timer IRQ
+  NonSecurePL2Timer          — Hypervisor timer IRQ
+  Platform timers[]          — SBSA GTDT extension: memory-mapped timers
+</code></pre>
+<p>Linux: <code>acpi_arch_timer_init()</code> reads GTDT, registers <code>arch_timer</code> platform device.</p>
+<hr />
+<h4 id="iort-io-remapping-table">IORT — IO Remapping Table</h4>
+<p>Describes the SMMU (ARM IOMMU) topology and DMA address mappings.</p>
+<pre><code>Node types:
+  ITS group      — GIC ITS nodes (MSI routing)
+  Named component — named DMA master (e.g., PCIe, USB, UFS)
+  SMMU v1/v2     — Qualcomm SMMU-500 (SMMUv2)
+  SMMU v3        — ARM SMMUv3
+  Root complex   — PCIe root complex entry
+  Memory range   — DMA window description
+
+ID mappings (SMMU stream IDs):
+  Each Named Component has ID mapping array:
+  [input_base, id_count, output_base, output_reference]
+  Tells SMMU driver which stream IDs belong to which SMMU
+</code></pre>
+<p>Linux: <code>drivers/acpi/arm64/iort.c</code> parses IORT, registers IOMMU groups,<br />
+sets up DMA ops for each device.</p>
+<hr />
+<h4 id="csrt-core-system-resource-table">CSRT — Core System Resource Table</h4>
+<p>Describes DMA controllers and timer resources that are not in MADT/GTDT.</p>
+<pre><code>Resource group:
+  Shared info header (vendor ID, device ID, subsystem ID)
+  Resource descriptors:
+    Type 0: DMA channel
+    Type 1: Timer
+</code></pre>
+<p>On Qualcomm: describes BAM DMA channels for QUPV3 if needed.</p>
+<hr />
+<h4 id="pptt-processor-properties-topology-table">PPTT — Processor Properties Topology Table</h4>
+<p>Describes CPU cache topology and cluster hierarchy for cache coherency and<br />
+power management.</p>
+<pre><code>Node types:
+  Processor node — cluster or core
+  Cache          — L1/L2/L3 cache properties (size, ways, line size)
+
+Example (SM8480 — 3-cluster):
+  Cluster 0 (Silver — 4× Cortex-A520)
+    Core 0  → L1D, L1I, L2 (shared cluster)
+    Core 1
+    ...
+  Cluster 1 (Gold — 3× Cortex-A720)
+    ...
+  Cluster 2 (Prime — 1× Cortex-X4)
+    ...
+  L3 cache (system cache, shared all clusters)
+</code></pre>
+<p>Linux uses PPTT for <code>cpu_topology</code> and <code>cacheinfo</code>.</p>
+<hr />
+<h4 id="spcr-serial-port-console-redirection-table">SPCR — Serial Port Console Redirection Table</h4>
+<p>Describes the primary serial console port. Allows OS to configure a serial<br />
+console without command-line parameters.</p>
+<pre><code>Fields:
+  InterfaceType: 0x12 = ARM PL011  /  0x03 = 16550
+  BaseAddress: GAS (Generic Address Structure) — MMIO base
+  InterruptType: GIC (arm64)
+  Interrupt: GSI number
+  BaudRate: encoded (0x07 = 115200)
+  FlowControl: none / HW
+</code></pre>
+<p>Linux: <code>acpi_parse_spcr()</code> → registers <code>earlycon</code> if no <code>earlycon=</code> on cmdline.</p>
+<hr />
+<h4 id="dbg2-debug-port-table-2">DBG2 — Debug Port Table 2</h4>
+<p>Describes additional debug UART(s) for OS debugger use (e.g., KDGB serial).</p>
+<hr />
+<h4 id="ssdt-secondary-system-description-table">SSDT — Secondary System Description Table</h4>
+<p>Optional tables that extend the DSDT namespace. Can be:<br />
+- <strong>Static:</strong> loaded by firmware at boot alongside DSDT<br />
+- <strong>Dynamic (initramfs overlay):</strong> injected by <code>CONFIG_ACPI_TABLE_UPGRADE</code><br />
+  — Linux scans uncompressed cpio prepend for <code>kernel/firmware/acpi/*.aml</code></p>
+<p>Example use: adding a device not present in base DSDT (e.g., <code>uart21_ssdt.aml</code><br />
+adds <code>\_SB.QURC</code> for UART21 on Glymur).</p>
+<hr />
+<h2 id="3-xbl-uefi-hlos-boot-flow">3. XBL → UEFI → HLOS Boot Flow</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────┐
+│  XBL (eXtensible Boot Loader)  — Stage 0                           │
+│                                                                     │
+│  • Initialize DDR: PLL, PHY training, voltage                      │
+│  • Initialize PMIC, RPMh, SMPS/LDO voltage rails                   │
+│  • Program GCC clock rates for all critical domains                 │
+│  • Bring up CPUSS (bringup CPU0)                                    │
+│  • Load UEFI from partition into DDR                                │
+│  • Jump to UEFI entry point                                         │
+│                                                                     │
+│  Key point: XBL is the real hardware initializer.                  │
+│  By the time UEFI starts, core clocks are already running.         │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ loads + jumps
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  UEFI — DXE Phase (Driver Execution Environment)                    │
+│                                                                     │
+│  DXE drivers (in dependency order):                                 │
+│                                                                     │
+│  ClockDxe          → wraps GCC/AOSS clocks as EFI_CLOCK_PROTOCOL   │
+│  PILProxyDxe       → loads firmware blobs via PIL                  │
+│                       (QUPV3FW, IO-EXTN-FW, ...)                   │
+│  SPSSLib           → reads PcdDisableSPSSBoot from spss.dtsi        │
+│                       TRUE → skips SPSS/TME load → no MCP auth     │
+│  GeniSerialDxe     → initializes UART via ClockDxe + MMIO          │
+│  AcpiPlatformDxe   → loads acpi.elf from BOOT_FW2 partition        │
+│                       calls gEfiAcpiTableProtocol-&gt;                 │
+│                           InstallAcpiTable() for each table:        │
+│                           FACP, DSDT, FACS, MADT, GTDT,            │
+│                           CSRT, IORT, PPTT, SPCR, DBG2...          │
+│  DtPlatformDxe     → reads OsConfigTableSelection UEFI variable    │
+│                       0x0 (ACPI) → installs RSDP into EFI          │
+│                                    Configuration Table              │
+│                       0x1 (DT)   → installs DTB                    │
+│  PlatformBootManager→ signals gEfiACPITableLoadGuid event           │
+│                       → AcpiPlatformDxe::ACPITableLoadNotification()│
+│                       → LoadAcpi() → BuildPilCfgAndLoadAcpi()      │
+│                                                                     │
+│  EFI System Table (memory):                                         │
+│    ConfigurationTable[]                                             │
+│      └── {EFI_ACPI_20_TABLE_GUID, RSDP_ptr}   ← key handoff point │
+│                                                                     │
+│  ExitBootServices() called by EFI stub:                             │
+│    → All DXE drivers die (ClockDxe, GeniSerialDxe, etc.)           │
+│    → Their memory reclaimed as conventional RAM                     │
+│    → ACPI tables remain (pinned in EFI reserved memory)            │
+│    → GCC registers retain values → clocks keep running             │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │ RSDP in EFI config table
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Linux EFI Stub  (arch/arm64/kernel/efi-entry.S +                  │
+│                   drivers/firmware/efi/libstub/arm64-stub.c)        │
+│                                                                     │
+│  efi_main():                                                        │
+│    1. Scan EFI Configuration Table for EFI_ACPI_20_TABLE_GUID      │
+│    2. Store RSDP physical address in boot_params                    │
+│    3. Allocate memory for kernel image + initramfs                  │
+│    4. Relocate kernel if needed                                     │
+│    5. Call ExitBootServices() → UEFI services dead                  │
+│    6. Jump to kernel_start (arch/arm64/kernel/head.S)               │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  Linux Kernel — start_kernel()                                      │
+│                                                                     │
+│  setup_arch()                                                       │
+│    efi_init()              → maps EFI memory, locates RSDP         │
+│    acpi_boot_table_init()  → RSDP → XSDT → all table headers       │
+│    early_acpi_boot_init()  → MADT: CPUs, GIC, timer topology       │
+│                                                                     │
+│  smp_init()                → MADT: bring online secondary CPUs     │
+│                                                                     │
+│  subsys_initcall:                                                   │
+│    acpi_init()                                                      │
+│      acpi_load_tables()                                             │
+│        acpi_ev_install_region_handlers()                            │
+│          → registers handlers for SystemMemory, SystemIO           │
+│          → on HW-reduced ARM64: AE_BAD_PARAMETER for legacy IO     │
+│             (non-fatal — continues)                                 │
+│        acpi_tb_load_namespace()                                     │
+│          → parses DSDT AML bytecode                                 │
+│          → builds ACPI namespace tree: \_SB.*                      │
+│                                                                     │
+│      CONFIG_ACPI_TABLE_UPGRADE (initramfs SSDT injection)           │
+│        → scans initramfs cpio for kernel/firmware/acpi/*.aml        │
+│        → acpi_table_upgrade() → loads SSDTs into namespace         │
+│                                                                     │
+│      acpi_scan_init()                                               │
+│        → walks namespace → struct acpi_device per Device()          │
+│        → reads _HID, _CID, _UID, _CRS, _STA                       │
+│        → builds ACPI device tree under acpi_root_device            │
+│                                                                     │
+│  device_initcall:                                                   │
+│    acpi_apd.c matches _HID → creates platform_device               │
+│    driver probe() called via platform bus                           │
+└─────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h2 id="4-acpi-namespace-and-driver-binding">4. ACPI Namespace and Driver Binding</h2>
+<h3 id="41-namespace-structure">4.1 Namespace Structure</h3>
+<p>The ACPI namespace is a tree of named objects built from DSDT + SSDT bytecode.<br />
+Device objects live under <code>\_SB</code> (System Bus).</p>
+<pre><code>\
+└── _SB  (System Bus — root for all hardware)
+    ├── PCI0  (PCIe root complex)
+    ├── GIO0  (GPIO controller)
+    ├── I2C0  (I2C bus)
+    ├── COM0  (UART — _HID &quot;QCOM0E02&quot;)
+    ├── UFS0  (UFS storage)
+    ├── USB0  (USB controller)
+    └── CPU0..CPUN  (_HID &quot;ACPI0007&quot;, _CPC for cpufreq)
+</code></pre>
+<h3 id="42-driver-binding-chain">4.2 Driver Binding Chain</h3>
+<pre><code>DSDT Device() with _HID = &quot;QCOM0E02&quot;
+        │
+        ▼
+acpi_scan_init()
+  → struct acpi_device created
+  → bus_type = acpi_bus_type
+
+        │
+        ▼
+acpi_apd.c (ACPI Platform Driver — generic layer)
+  → acpi_apd_match_table[] entry for &quot;QCOM0E02&quot;:
+      .mode = APD_MODE_CLOCK
+      .fixed_clk_rate = 7372800  (7.3728 MHz)
+      .clk_conn_names = {&quot;se&quot;, NULL}
+  → acpi_apd_setup() injects clock metadata
+  → platform_device_alloc() + platform_device_add()
+
+        │
+        ▼
+platform bus matches driver (e.g., qcom_geni_serial)
+  → driver probe() called
+  → has_acpi_companion(dev) == true
+  → uses _CRS for MMIO + IRQ
+  → uses fixed_clk_rate (no clk_get())
+</code></pre>
+<h3 id="43-resource-acquisition-in-acpi-mode">4.3 Resource Acquisition in ACPI Mode</h3>
+<pre><code class="language-c">// MMIO — from _CRS Memory32Fixed()
+ret = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+base = devm_ioremap_resource(dev, ret);
+
+// IRQ — from _CRS Interrupt()
+irq = platform_get_irq(pdev, 0);
+
+// Clock — from APD fixed_clk_rate (NO clock framework call)
+clk_rate = dev_pm_opp_get_freq(dev);  // or read from platform_data
+// NOT: devm_clk_get(dev, &quot;se&quot;)  ← this fails in ACPI mode (no clock framework)
+
+// Power domain — from _PS0/_PS3 methods (via ACPI PM)
+// NOT: devm_pd_get()  ← DT-only
+</code></pre>
+<hr />
+<h2 id="5-key-acpi-apis-kernel-sequencing">5. Key ACPI APIs — Kernel Sequencing</h2>
+<h3 id="51-boot-time-acpi-init-sequence">5.1 Boot-Time ACPI Init Sequence</h3>
+<pre><code>start_kernel()
+    │
+    ├── setup_arch()
+    │     ├── efi_init()                      // maps EFI memory, finds RSDP
+    │     │     └── acpi_os_get_root_pointer() // returns RSDP physical addr
+    │     ├── acpi_boot_table_init()
+    │     │     ├── acpi_initialize_tables()   // validates RSDP→XSDT
+    │     │     └── acpi_table_parse()         // reads FADT → confirms HW-Reduced
+    │     └── early_acpi_boot_init()
+    │           ├── acpi_table_parse(MADT, ...)
+    │           │     ├── counts CPUs (GICC entries)
+    │           │     └── registers GIC base addresses
+    │           └── acpi_gtdt_init()           // arch timer from GTDT
+    │
+    ├── smp_init()
+    │     └── acpi_map_cpu_to_node()           // PPTT NUMA topology
+    │
+    └── subsys_initcall: acpi_init()
+          │
+          ├── acpi_load_tables()
+          │     ├── acpi_tb_load_namespace()   // DSDT AML → namespace tree
+          │     └── acpi_ev_install_region_handlers()
+          │
+          ├── acpi_table_upgrade()             // SSDT overlays from initramfs
+          │     └── scans /kernel/firmware/acpi/*.aml in initramfs cpio
+          │
+          ├── acpi_scan_init()
+          │     ├── acpi_walk_namespace()      // traverse \_SB.*
+          │     ├── acpi_bus_type_init()       // register acpi bus type
+          │     ├── acpi_device_add()          // one per Device() object
+          │     └── acpi_probe_children()      // match + bind drivers
+          │
+          ├── acpi_iort_init()                 // IORT → SMMU, DMA ops
+          ├── acpi_spcr_init()                 // SPCR → earlycon/console
+          └── acpi_psci_init()                 // PSCI via FADT/MADT flags
+</code></pre>
+<h2 id="6-glymur-acpi-bringup-issues-encountered-and-fixes">6. Glymur ACPI Bringup — Issues Encountered and Fixes</h2>
+<p>This section documents every issue hit while bringing up ACPI boot on Glymur (SM8480)<br />
+and the corresponding fix or workaround.</p>
+<hr />
+<h3 id="61-uefi-issues">6.1 UEFI Issues</h3>
+<h4 id="issue-a-spsstmemcp-auth-failure-smmu-unidentified-stream-fault">Issue A — SPSS/TME/MCP Auth Failure → SMMU Unidentified Stream Fault</h4>
+<p><strong>Root cause:</strong></p>
+<p>TME loads MCP firmware and brings MCP out of reset before TZ authentication<br />
+completes (standard PIL flow). TZ then fails authentication<br />
+(<code>TzStatus = 0xFFFFFFFE</code>, <code>BIST_CTRL</code> fuse unprogrammed) and returns an error.<br />
+However, TZ only verifies the image — it does <strong>not</strong> re-assert MCP's reset or<br />
+cut its power after a failed auth. TME does not handle the auth failure cleanly,<br />
+so MCP stays running.</p>
+<p>MCP firmware proceeds with its normal init and issues DMA transactions<br />
+(<code>StreamID 0x1c001de0</code>). In UEFI this is harmless — the SMMU is in bypass mode.<br />
+Once Linux enables SMMU enforcement, MCP's DMA hits an <strong>Unidentified Stream<br />
+Fault</strong> because no SMMU context was ever configured (TZ auth failed before that<br />
+step, so stream-ID programming was never done).</p>
+<p><strong>Failure sequence:</strong></p>
+<pre><code>SPSS PIL load → TME loads MCP → TZ auth fails (BIST_CTRL fuse unprogrammed)
+  └─ TZ does NOT re-assert MCP reset
+       └─ MCP runs, issues DMA (StreamID 0x1c001de0)
+            └─ UEFI: SMMU bypass → harmless
+                 └─ Linux enables SMMU enforcement
+                      └─ MCP DMA → SMMU USF crash → kernel panic
+</code></pre>
+<p><strong>Fix:</strong> Set <code>PcdDisableSPSSBoot = TRUE</code> in <code>spss.dtsi</code> (UEFI source).<br />
+This causes <code>SPSSLib</code> to return <code>EFI_LOAD_ERROR</code> early, preventing SPSS/TME/MCP<br />
+from being loaded at all.</p>
+<pre><code>Reference patch: UEFI_SPSS_disable_changes.patch
+</code></pre>
+<p><strong>Workaround (if UEFI change not available):</strong> Add <code>arm-smmu.disable_bypass=0</code><br />
+to the kernel command line. This keeps the SMMU in bypass mode so MCP's<br />
+unauthenticated DMA does not fault.</p>
+<blockquote>
+<p><strong>Note:</strong> The workaround disables SMMU enforcement globally and should only<br />
+be used for bringup/debug. The proper fix is the UEFI <code>PcdDisableSPSSBoot</code> change.</p>
+</blockquote>
+<hr />
+<h4 id="issue-b-uefi-variable-boot-path-selection">Issue B — UEFI Variable / Boot Path Selection</h4>
+<p>To select the ACPI boot path, one of the following must be done:</p>
+<p><strong>Option 1 — Set UEFI variable:</strong></p>
+<pre><code>OsConfigTableSelection = 0x0
+</code></pre>
+<p>This causes <code>DtPlatformDxe</code> to select <code>DT_ACPI_SELECT_ACPI</code> and install the<br />
+RSDP into the EFI Configuration Table. Also set boot order to <code>"Qclinux"</code>.</p>
+<p><strong>Option 2 — Run NSH script in UEFI shell:</strong></p>
+<pre><code>Boot_Linux_ACPI.nsh
+</code></pre>
+<p>Without one of these, <code>DtPlatformDxe</code> defaults to DT mode and Linux never finds<br />
+the RSDP — ACPI init does not start.</p>
+<hr />
+<h3 id="62-kernel-config">6.2 Kernel Config</h3>
+<h4 id="issue-acpi-namespace-load-fails-without-config_acpi_reduced_hardware_only">Issue — ACPI Namespace Load Fails Without <code>CONFIG_ACPI_REDUCED_HARDWARE_ONLY</code></h4>
+<pre><code>CONFIG_ACPI_REDUCED_HARDWARE_ONLY=y
+</code></pre>
+<p>Qualcomm ACPI tables already set <code>HW_REDUCED_ACPI</code> in the FADT flags. This flag<br />
+means legacy PC-style PM1a/PM1b IO registers do not exist. Without this Kconfig<br />
+option, the kernel still attempts to access legacy hardware regions during ACPI<br />
+init and fails.</p>
+<p><strong>Kconfig dependency added:</strong></p>
+<pre><code class="language-kconfig">config ACPI_REDUCED_HARDWARE_ONLY
+    bool
+    select ACPI_REDUCED_HARDWARE_ONLY if ACPI
+</code></pre>
+<hr />
+<h3 id="63-kernel-driver-changes">6.3 Kernel Driver Changes</h3>
+<blockquote>
+<p>Reference patch: <code>Kernel_my_changes.patch</code></p>
+</blockquote>
+<h4 id="fix-a-driverssocqcomqcom-geni-sec">Fix A — <code>drivers/soc/qcom/qcom-geni-se.c</code></h4>
+<p><strong>Problem:</strong> <code>geni_se_get_qup_hw_version()</code> dereferences <code>se-&gt;wrapper</code> to read<br />
+the QUP hardware version register. In DT mode, <code>se-&gt;wrapper</code> points to the QUP<br />
+wrapper parent device. In ACPI mode, the device hierarchy is flat — there is no<br />
+QUP wrapper parent device, so <code>se-&gt;wrapper == NULL</code> → NULL pointer dereference.</p>
+<p><strong>Fix:</strong> Add a NULL guard that returns a hardcoded version instead of<br />
+dereferencing:</p>
+<pre><code class="language-c">// if se-&gt;wrapper is NULL (ACPI flat hierarchy), return SM8480 QUP version
+if (!se-&gt;wrapper)
+    return 0x300A0000;   // QUP v3.10 for SM8480
+</code></pre>
+<hr />
+<h4 id="fix-b-driversttyserialqcom_geni_serialc-3-fixes">Fix B — <code>drivers/tty/serial/qcom_geni_serial.c</code> (3 fixes)</h4>
+<p><strong>Fix B1 — <code>request_port()</code>: skip re-map if already mapped</strong></p>
+<p>In ACPI mode, <code>qcom_geni_serial_probe()</code> must pre-map MMIO registers via<br />
+<code>request_port()</code> before calling <code>uart_add_one_port()</code> (the UART core calls<br />
+<code>request_port()</code> again internally). Without a guard, the second call<br />
+re-maps the same region and overwrites <code>uport-&gt;membase</code>.</p>
+<pre><code class="language-c">// Skip ioremap if registers already mapped (ACPI pre-map path)
+if (uport-&gt;membase)
+    return 0;
+</code></pre>
+<p><strong>Fix B2 — <code>geni_serial_resource_init()</code>: early return in ACPI mode</strong></p>
+<p>In DT mode this function calls <code>devm_clk_get(dev, "se")</code> and <code>icc_get()</code>.<br />
+Both fail in ACPI mode — the clock framework and ICC framework are DT-only.<br />
+Firmware (XBL/UEFI) already set the UART clock frequency and bus config.</p>
+<pre><code class="language-c">// In ACPI mode: firmware owns clock + bus. Skip DT-only resource init.
+if (has_acpi_companion(dev))
+    return 0;
+</code></pre>
+<p><strong>Fix B3 — <code>qcom_geni_serial_probe()</code>: pre-map registers before <code>uart_add_one_port()</code></strong></p>
+<p>In ACPI mode, <code>uart_add_one_port()</code> triggers <code>request_port()</code> which needs<br />
+<code>uport-&gt;membase</code> already set. Pre-map via <code>request_port()</code> in probe before<br />
+the <code>uart_add_one_port()</code> call.</p>
+<pre><code class="language-c">if (has_acpi_companion(&amp;pdev-&gt;dev)) {
+    ret = uport-&gt;ops-&gt;request_port(uport);
+    if (ret)
+        return ret;
+}
+</code></pre>
+<hr />
+<h4 id="fix-c-driversacpiacpicatbxfloadc">Fix C — <code>drivers/acpi/acpica/tbxfload.c</code></h4>
+<p><strong>Problem:</strong> <code>acpi_ev_install_region_handlers()</code> returns <code>AE_BAD_PARAMETER</code><br />
+when registering handlers for <code>SystemIO</code> and other legacy hardware regions.<br />
+On HW-Reduced ACPI (ARM64), these regions do not exist — the error is expected.<br />
+However, ACPICA treated this as fatal and aborted the namespace load, preventing<br />
+<code>acpi_tb_load_namespace()</code> from completing.</p>
+<p><strong>Fix:</strong> Make <code>AE_BAD_PARAMETER</code> non-fatal during region handler installation:</p>
+<pre><code class="language-c">// AE_BAD_PARAMETER is expected on HW_REDUCED_ACPI platforms
+// (legacy IO regions absent) — treat as non-fatal and continue
+if (status == AE_BAD_PARAMETER)
+    status = AE_OK;
+</code></pre>
+<p>Without this fix, ACPI namespace load fails entirely and no devices are<br />
+discovered.</p>
+<hr />
+<h3 id="64-ramdisk-uart21-ssdt-injection-workaround">6.4 Ramdisk — UART21 SSDT Injection (Workaround)</h3>
+<p><strong>Problem:</strong> The base ACPI tables (<code>acpi.elf</code> on <code>BOOT_FW2</code>) do not include a<br />
+Device node for UART21. <code>qcom_geni_serial</code> has no ACPI device to bind to and<br />
+<code>/dev/ttyMSM0</code> is never registered — no console.</p>
+<p><strong>Workaround:</strong> Prepend an uncompressed cpio archive containing the UART21 SSDT<br />
+AML file before the main ramdisk. <code>CONFIG_ACPI_TABLE_UPGRADE</code> causes Linux to<br />
+scan the uncompressed cpio prepend for <code>kernel/firmware/acpi/*.aml</code> and inject<br />
+them into the ACPI namespace.</p>
+<pre><code>Ramdisk layout:
+  [uncompressed cpio] kernel/firmware/acpi/uart21.aml
+  [main ramdisk.gz]
+
+Result:
+  acpi_table_upgrade() loads uart21.aml
+  → \_SB.QURC (Device, _HID = &quot;QCOM0E02&quot;) appears in namespace
+  → acpi_apd matches → platform_device created
+  → qcom_geni_serial probe() → /dev/ttyMSM0 registered
+</code></pre>
+<p><strong>SSDT provides:</strong><br />
+- MMIO base: <code>0x894000</code> (size <code>0x4000</code>)<br />
+- IRQ: <code>619</code> (<code>0x26B</code>)<br />
+- <code>_HID = "QCOM0E02"</code> (matched by <code>qcom_geni_serial</code> <code>acpi_match_table</code>)</p>
+<p>compilation procedure:<br />
+you need to create peripheral dsl fiel (uart21_ssdt.dsl)<br />
+iasl uart21_ssdt.dsl -&gt; uart21_ssdt.aml --&gt; compile dsl file and generate aml.<br />
+keep aml file as cpio format in /kernel/firmware/acpi</p>
+<h1 id="to-prepare-run-time-ssdt-table-in-ramdisk">To prepare run time SSDT Table in ramdisk</h1>
+<p>mkdir -p kernel/firmware/acpi                                                                                                                                                           <br />
+  cp uart21_ssdt.aml kernel/firmware/acpi/                                                                                                                                                <br />
+  find kernel/firmware/acpi/uart21_ssdt.aml | cpio -o --format=newc &gt; ssdt_prepend.cpio   # NO -v flag!                                                                                     </p>
+<h1 id="prepend-before-the-main-gzip-ramdisk">Prepend before the main gzip ramdisk</h1>
+<p>cat ssdt_prepend.cpio original_ramdisk.cpio.gz &gt; new_ramdisk.cpio.gz</p>
+<p><strong>Long-term fix:</strong> Include the UART21 SSDT in <code>acpi.elf</code> on the <code>BOOT_FW2</code><br />
+partition so it is loaded directly by <code>AcpiPlatformDxe</code> at UEFI boot — no<br />
+ramdisk overlay needed.</p>
+<hr />
+<h3 id="65-kernel-command-line">6.5 Kernel Command Line</h3>
+<p>Full command line used for Glymur ACPI boot:</p>
+<pre><code>console=ttyMSM0
+earlycon=qcom_geni,0x894000
+acpi=force
+efi=debug
+root=/dev/ram
+rw
+rootwait
+no_console_suspend=1
+kernel.sysrq=1
+rcupdate.rcu_cpu_stall_suppress_at_boot=1
+arm-smmu.disable_bypass=0
+printk.devkmsg=on
+console_msg_format=syslog
+loglevel=8
+kpti=0
+qcom_scm.download_mode=1
+ignore_loglevel
+</code></pre>
+<p><strong>Key parameters explained:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>acpi=force</code></td>
+<td>Force ACPI mode even if firmware doesn't set the preferred OS hint</td>
+</tr>
+<tr>
+<td><code>earlycon=qcom_geni,0x894000</code></td>
+<td>Early console before UART driver probes; must match UART21 MMIO base</td>
+</tr>
+<tr>
+<td><code>arm-smmu.disable_bypass=0</code></td>
+<td><strong>Workaround</strong> — keeps SMMU in bypass to avoid MCP USF crash (use <code>PcdDisableSPSSBoot</code> as proper fix)</td>
+</tr>
+<tr>
+<td><code>efi=debug</code></td>
+<td>Verbose EFI memory map and table parsing output</td>
+</tr>
+<tr>
+<td><code>kpti=0</code></td>
+<td>Disable kernel page table isolation (debug/bringup — reduces noise)</td>
+</tr>
+<tr>
+<td><code>qcom_scm.download_mode=1</code></td>
+<td>Enable Qualcomm RAM dump mode on crash</td>
+</tr>
+<tr>
+<td><code>loglevel=8</code> + <code>ignore_loglevel</code></td>
+<td>Maximum verbosity for all subsystems</td>
+</tr>
+<tr>
+<td><code>rcupdate.rcu_cpu_stall_suppress_at_boot=1</code></td>
+<td>Suppress RCU stall warnings during slow boot init</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="66-issue-summary-table-while-boot-on-glymur">6.6 Issue Summary Table while boot on Glymur</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Area</th>
+<th>Issue</th>
+<th>Fix / Workaround</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1a</td>
+<td>UEFI</td>
+<td>SPSS/TME auth fails → MCP runs → SMMU USF crash</td>
+<td><code>PcdDisableSPSSBoot=TRUE</code> in <code>spss.dtsi</code> (<code>UEFI_SPSS_disable_changes.patch</code>)</td>
+</tr>
+<tr>
+<td>1a</td>
+<td>UEFI</td>
+<td>Workaround if UEFI fix unavailable</td>
+<td><code>arm-smmu.disable_bypass=0</code> in cmdline</td>
+</tr>
+<tr>
+<td>1b</td>
+<td>UEFI</td>
+<td>ACPI boot path not selected</td>
+<td><code>OsConfigTableSelection=0x0</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Kernel config</td>
+<td>Namespace load fails on HW-Reduced ACPI</td>
+<td><code>CONFIG_ACPI_REDUCED_HARDWARE_ONLY=y</code></td>
+</tr>
+<tr>
+<td>3a</td>
+<td>Kernel driver</td>
+<td>NULL deref in <code>geni_se_get_qup_hw_version()</code></td>
+<td>NULL guard → return <code>0x300A0000</code> when <code>se-&gt;wrapper == NULL</code></td>
+</tr>
+<tr>
+<td>3b1</td>
+<td>Kernel driver</td>
+<td><code>request_port()</code> re-maps already-mapped MMIO</td>
+<td>Skip ioremap if <code>uport-&gt;membase</code> already set</td>
+</tr>
+<tr>
+<td>3b2</td>
+<td>Kernel driver</td>
+<td><code>clk_get()</code> / <code>icc_get()</code> fail in ACPI mode</td>
+<td>Early return in <code>geni_serial_resource_init()</code> if <code>has_acpi_companion()</code></td>
+</tr>
+<tr>
+<td>3b3</td>
+<td>Kernel driver</td>
+<td><code>uart_add_one_port()</code> called before MMIO mapped</td>
+<td>Pre-call <code>request_port()</code> in probe for ACPI path</td>
+</tr>
+<tr>
+<td>3c</td>
+<td>Kernel driver</td>
+<td><code>AE_BAD_PARAMETER</code> aborts ACPI namespace load</td>
+<td>Make non-fatal in <code>tbxfload.c</code> (<code>Kernel_my_changes.patch</code>)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Ramdisk</td>
+<td>UART21 absent from DSDT → no <code>/dev/ttyMSM0</code></td>
+<td>SSDT overlay via initramfs cpio; long-term: add to <code>acpi.elf</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-dt-vs-acpi-mode-comparison">7. DT vs ACPI Mode Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>DT mode</th>
+<th>ACPI mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Device topology</td>
+<td>DT nodes (<code>of_node</code>)</td>
+<td>ACPI namespace (DSDT/SSDT AML)</td>
+</tr>
+<tr>
+<td>Resource (MMIO/IRQ)</td>
+<td>DT <code>reg</code> / <code>interrupts</code></td>
+<td>ACPI <code>_CRS</code> (Memory32Fixed, Interrupt)</td>
+</tr>
+<tr>
+<td>Driver binding</td>
+<td><code>of_match_table</code> compatible</td>
+<td><code>acpi_match_table</code> _HID</td>
+</tr>
+<tr>
+<td>Clock init</td>
+<td>Kernel <code>clk_set_rate()</code></td>
+<td>Firmware sets; driver uses <code>fixed_clk_rate</code></td>
+</tr>
+<tr>
+<td>Bus bandwidth</td>
+<td><code>icc_set_bw()</code> via DT nodes</td>
+<td>Skipped (SCMI not yet implemented)</td>
+</tr>
+<tr>
+<td>Power management</td>
+<td><code>power-domains</code> phandle</td>
+<td><code>_PS0/_PS3</code> methods, SCMI (future)</td>
+</tr>
+<tr>
+<td>CPU freq</td>
+<td>cpufreq + OPP table</td>
+<td>CPUFREQ HW block or CPPC</td>
+</tr>
+<tr>
+<td>UART parent hierarchy</td>
+<td>QUP Wrapper → SE (<code>wrapper</code> non-NULL)</td>
+<td>Flat platform device (<code>wrapper = NULL</code>)</td>
+</tr>
+<tr>
+<td>Firmware role</td>
+<td>Describes HW; kernel owns clock</td>
+<td>Initializes HW; kernel observes</td>
+</tr>
+<tr>
+<td>Update path</td>
+<td>Rebuild DTB, re-flash</td>
+<td>Rebuild DSDT (acpi.elf), update BOOT_FW2</td>
+</tr>
+<tr>
+<td>SSDT injection</td>
+<td>Not applicable</td>
+<td>initramfs cpio overlay (CONFIG_ACPI_TABLE_UPGRADE)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-missing-tables-that-can-be-introduced-purely-in-uefi">8. Missing tables that can be introduced purely in UEFI</h2>
+<p>Based on current table set (FACP, DSDT, FACS, MADT, GTDT, CSRT, IORT, PPTT, SPCR, DBG2), here are the missing tables that can be introduced purely in UEFI (acpi.elf) with Linux handling<br />
+  them natively — no kernel workarounds needed:                                                                                                                                             </p>
+<hr />
+<p>Category A: Standard ACPI Tables — Linux Handles Natively, Zero Kernel Changes</p>
+<p>┌───────┬────────────────────────────────┬─────────────┬─────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────┐<br />
+  │ Table │           Full Name            │  ACPI Spec  │          Linux Driver           │                                      What It Enables                                       │ <br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤<br />
+  │ BERT  │ Boot Error Record Table        │ ACPI 4.0    │ drivers/acpi/apei/bert.c        │ UEFI writes hardware errors before ExitBootServices; Linux reads and logs them             │<br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤<br />
+  │ HEST  │ Hardware Error Source Table    │ ACPI 4.0    │ drivers/acpi/apei/ghes.c        │ Describes error sources (GHES) for RAS; Linux registers error handlers                     │ <br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ MCFG  │ PCI Express Memory-Mapped      │ ACPI 3.0    │ drivers/pci/ecam.c              │ PCIe ECAM base address; Linux PCI enumeration depends on this                              │ <br />
+  │       │ Config                         │             │                                 │                                                                                            │ <br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤<br />
+  │ SRAT  │ System Resource Affinity Table │ ACPI 2.0    │ arch/arm64/kernel/acpi_numa.c   │ CPU/memory NUMA topology; improves scheduler locality decisions on multi-cluster SoC       │ <br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤<br />
+  │ HMAT  │ Heterogeneous Memory Attribute │ ACPI 6.2    │ drivers/acpi/numa/hmat.c        │ Memory performance attributes; used by tiered-memory and devdax                            │ <br />
+  │       │  Table                         │             │                                 │                                                                                            │<br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ LPIT  │ Low Power Idle Table           │ ACPI 5.1    │ drivers/acpi/acpi_lpit.c        │ Describes platform idle residency counters; Linux uses for                                 │<br />
+  │       │                                │             │                                 │ /sys/devices/system/cpu/cpuidle/ accounting                                                │ <br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤<br />
+  │ FPDT  │ Firmware Performance Data      │ ACPI 5.0    │ drivers/acpi/acpi_fpdt.c        │ Firmware boot timing records; exposed via /sys/firmware/acpi/fpdt                          │<br />
+  │       │ Table                          │             │                                 │                                                                                            │ <br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤<br />
+  │ PCCT  │ Platform Communications        │ ACPI 5.0    │ drivers/mailbox/pcc.c           │ Shared memory channel descriptor for CPPC; prerequisite for cppc_cpufreq                   │ <br />
+  │       │ Channel Table                  │             │                                 │                                                                                            │<br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ WSMT  │ Windows SMM Security           │ MS          │ arch/x86/ (informational on     │ SMM security attestation; Linux reads and logs compliance bits                             │ <br />
+  │       │ Mitigation Table               │ extension   │ ARM)                            │                                                                                            │<br />
+  ├───────┼────────────────────────────────┼─────────────┼─────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ STAO  │ Status Override Table          │ ACPI 6.0    │ drivers/acpi/acpi_platform.c    │ Hides specific ACPI namespace devices (e.g., DT-only devices that appear in DSDT but must  │<br />
+  │       │                                │             │                                 │ not probe in ACPI mode)                                                                    │ <br />
+  └───────┴────────────────────────────────┴─────────────┴─────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────┘</p>
+<hr />
+<p>Category B: ARM-Specific Tables — Upstream Linux Already Handles</p>
+<p>┌───────┬───────────────────────────────────────┬─────────────┬───────────────────────────────────┬─────────────────────────────────────────────────────────────┐<br />
+  │ Table │               Full Name               │  ARM Spec   │           Linux Driver            │                       What It Enables                       │                       <br />
+  ├───────┼───────────────────────────────────────┼─────────────┼───────────────────────────────────┼─────────────────────────────────────────────────────────────┤                       <br />
+  │ AEST  │ ARM Error Source Table                │ ARM DEN0085 │ drivers/acpi/apei/aest.c (v5.14+) │ ARM CPU/cache/bus error sources; extends HEST for ARM RAS   │                       <br />
+  ├───────┼───────────────────────────────────────┼─────────────┼───────────────────────────────────┼─────────────────────────────────────────────────────────────┤                       <br />
+  │ MPAM  │ Memory Partitioning and Monitoring    │ ARM DEN0065 │ drivers/acpi/arm64/mpam.c         │ Memory bandwidth QoS partitioning; kernel resctrl interface │                       <br />
+  ├───────┼───────────────────────────────────────┼─────────────┼───────────────────────────────────┼─────────────────────────────────────────────────────────────┤                       <br />
+  │ AGDI  │ ARM Generic Diagnostic Dump and Reset │ ARM DEN0107 │ drivers/acpi/apei/agdi.c          │ Crash dump trigger and warm-reset coordination              │                       <br />
+  └───────┴───────────────────────────────────────┴─────────────┴───────────────────────────────────┴─────────────────────────────────────────────────────────────┘                         </p>
+<hr />
+<p>Category C: Missing DSDT/SSDT Entries in acpi.elf — UEFI Only, No Kernel Changes</p>
+<p>These are not separate tables but additions to the existing DSDT or new SSDTs that AcpiPlatformDxe loads from acpi.elf:</p>
+<p>┌─────────────────────────┬─────────────────────────────────────────────────────┬──────────────────────────────────────────┬────────────────────────────────────────────────────────┐   <br />
+  │          Entry          │                     What to Add                     │                Linux Path                │             Current Workaround Eliminated              │   <br />
+  ├─────────────────────────┼─────────────────────────────────────────────────────┼──────────────────────────────────────────┼────────────────────────────────────────────────────────┤   <br />
+  │ UART21 device node      │ _HID "QCOM0E02" in DSDT _SB scope                  │ acpi_apd.c → qcom_geni_serial.c (already │ Ramdisk SSDT prepend workaround                        │ <br />
+  │                         │                                                     │  patched)                                │                                                        │   <br />
+  ├─────────────────────────┼─────────────────────────────────────────────────────┼──────────────────────────────────────────┼────────────────────────────────────────────────────────┤   <br />
+  │ _CPC on each CPU node   │ Name (_CPC, Package{...perf_ctrl_reg...}) inside    │ drivers/acpi/cppc_acpi.c →               │ Standard CPPC path (Qualcomm CPUFREQ HW also works,    │   <br />
+  │                         │ each ACPI0007 device                                │ cpufreq/cppc_cpufreq.c                   │ but CPPC is spec-compliant)                            │   <br />
+  ├─────────────────────────┼─────────────────────────────────────────────────────┼──────────────────────────────────────────┼────────────────────────────────────────────────────────┤   <br />
+  │ SPCR Access Width fix   │ Fix G_INT_8 → ACPI_ACCESS_BYTE_WIDTH so SPCR        │ drivers/acpi/acpi_spcr.c                 │ console=ttyMSM0,115200 manual cmdline                  │ <br />
+  │                         │ auto-registers console                              │                                          │                                                        │   <br />
+  ├─────────────────────────┼─────────────────────────────────────────────────────┼──────────────────────────────────────────┼────────────────────────────────────────────────────────┤ <br />
+  │ _OSC in DSDT root       │ _OSC method to negotiate OS capabilities (CPPC,     │ drivers/acpi/bus.c                       │ Silent negotiation failures                            │   <br />
+  │                         │ PCIe, etc.)                                         │                                          │                                                        │   <br />
+  ├─────────────────────────┼─────────────────────────────────────────────────────┼──────────────────────────────────────────┼────────────────────────────────────────────────────────┤ <br />
+  │ NUMA proximity domains  │ _PXM methods on CPU and memory devices              │ arch/arm64/kernel/acpi_numa.c            │ Random NUMA placement                                  │   <br />
+  │ in SRAT+DSDT            │                                                     │                                          │                                                        │   <br />
+  └─────────────────────────┴─────────────────────────────────────────────────────┴──────────────────────────────────────────┴────────────────────────────────────────────────────────┘</p>
+<hr />
+<p>Tables That Require AOSS Firmware Change (Not Pure UEFI)</p>
+<p>These are excluded from "no workaround" because adding them in UEFI alone is insufficient — AOSS firmware must also implement the server side:</p>
+<p>┌────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐ <br />
+  │           Table/Node           │                                                           Why UEFI-only is insufficient                                                            │ <br />
+  ├────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ SCMI device _HID "ARMH0011" in │ UEFI can add the node, but AOSS must implement the SCMI server dispatch loop. Without AOSS server, Linux arm_scmi probe succeeds but all           │<br />
+  │  DSDT                          │ scmi_protocol_handle calls timeout.                                                                                                                │ <br />
+  ├────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ DSDT _DSM for ICC/DDR          │ Would need AOSS to respond to SMC calls encoding bandwidth votes                                                                                   │<br />
+  │ bandwidth                      │                                                                                                                                                    │ <br />
+  └────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘</p>
+<hr />
+<p>Priority Order (Highest Value, No Kernel Changes)</p>
+<ol>
+<li>BERT + HEST + AEST — RAS/error reporting, immediate value for any production use</li>
+<li>PCCT + _CPC — enables standard CPPC CPU frequency path (spec-compliant alternative to CPUFREQ HW)                                                                                      </li>
+<li>UART21 in DSDT — eliminates ramdisk SSDT workaround                                                                                                                                    </li>
+<li>SPCR Access Width fix — auto-registers console without manual cmdline                                                                                                                  </li>
+<li>MCFG — required if any PCIe endpoint needs to be enumerated                                                                                                                            </li>
+<li>LPIT — power accounting                                                                                                                                                                </li>
+<li>SRAT + HMAT — NUMA correctness on multi-cluster SoC (Cortex-X4 + A720 + A520 topology)</li>
+</ol>
+<hr />
+<h2 id="9-acpi-power-and-resource-management">9. ACPI Power and Resource Management</h2>
+<pre><code>Linux driver (ACPI mode)
+        │
+        │  CPPC / SCMI / CPUFREQ_HW register
+        ▼
+   SMC / SHMEM (QMP today → SCMI future)
+        ▼
+   AOSS firmware (always-on Cortex-M)
+   • aggregates requests
+   • runs DDR frequency sequences
+   • thermal policy
+        ▼
+   RPMh hardware (HW resource arbiter)
+   • receives TCS from all masters
+   • aggregates votes (MAX wins)
+   • programs PMIC / GCC / DDR PHY
+        ▼
+   GCC PLL / DDR PHY / PMIC rails
+</code></pre>
+<hr />
+<h2 id="10-limitaions-of-full-acpi-on-qualcomm-socs">10. Limitaions of Full ACPI on Qualcomm SoCs</h2>
+<ol>
+<li>SCMI Server Not Implemented in AOSS Firmware (Root Blocker)  </li>
+</ol>
+<p>The most fundamental gap. SCMI is the ARM-standard replacement for all DT-based resource management in ACPI mode.                                                                         </p>
+<p>Two-sided failure:                                                                                                                                                                      <br />
+  - UEFI side: No _HID "ARMH0011" SCMI device node in DSDT. Linux arm_scmi driver has nothing to bind to.<br />
+  - AOSS firmware side: No SCMI server dispatch loop. AOSS currently uses Qualcomm-proprietary QMP protocol — not SCMI.                                                                     </p>
+<p>Consequence: cpufreq-scmi, scmi-devfreq, clk-scmi consumers all fail at probe. No performance/clock/power domain handles registered.                                                      </p>
+<hr />
+<ol>
+<li>ICC (Interconnect / DDR Bandwidth Voting) — DT-Only, No ACPI Backend                                                                                                                   </li>
+</ol>
+<p>icc_get() internally calls of_icc_get(). There is no acpi_icc_get() in upstream kernel. drivers/interconnect/qcom/icc-rpmh.c uses rpmh_write() via DT path only.</p>
+<p>Consequence: DDR bandwidth voting silently disabled in ACPI mode. GPU, camera, USB, CPU all lose DDR frequency control. DDR runs at whatever AOSS's autonomous activity monitor picks — no<br />
+   Linux visibility.                                                                                                                                                                        </p>
+<hr />
+<ol>
+<li>OPP (Operating Performance Points) — DT-Only, No ACPI Equivalent</li>
+</ol>
+<p>OPP tables (operating-points-v2) are DT properties. dev_pm_opp_of_add_table() has no ACPI counterpart. The required-opps → power-domains linkage (which ties clock level to VDD_CX vote)<br />
+  has no ACPI representation.                                                                                                                                                               </p>
+<p>Consequence: GPU devfreq broken. No {freq → voltage} table → devfreq governor has no frequency steps. GPU runs at XBL/UEFI boot frequency permanently. No thermal-aware GPU scaling.      </p>
+<hr />
+<ol>
+<li>GCC Peripheral Clock Drivers — DT-Only                       </li>
+</ol>
+<p>All Qualcomm GCC clock drivers (clk-gcc-sm8550.c, etc.) use of_match_table and bind to DT nodes. No ACPI match table or _HID defined. Clock registration never happens in ACPI mode.</p>
+<p>Consequence: Peripheral clocks for I2C, SPI, USB, camera, display cannot be programmed by Linux. Drivers that call devm_clk_get() fail probe. Workaround today: skip clk_get() in ACPI  <br />
+  mode and rely on firmware-set rates (works only for simple fixed-rate peripherals like UART).                                                                                             </p>
+<hr />
+<ol>
+<li>QMP Mailbox (AOSS Communication) — DT-Only</li>
+</ol>
+<p>qcom_aoss.c and qcom-apcs-ipc-mailbox.c bind via of_platform_populate(). In ACPI mode of_platform_populate() never runs → QMP mailbox never registers → no Linux→AOSS communication<br />
+  channel at all.                                                                                                                                                                           </p>
+<p>Consequence: System sleep coordination (DDR collapse, voltage corner transitions) loses its Linux-side path. AOSS operates fully autonomously — Linux cannot request or observe power   <br />
+  state changes.                                                  </p>
+<hr />
+<ol>
+<li>Power Domain / Regulator Framework — DT-Only (for RPMh-backed regulators)</li>
+</ol>
+<p>qcom-rpmhpd.c registers RPMh power domains via DT power-domains phandles. In ACPI mode, dev_pm_opp_set_rate() cannot find the genpd power domain → voltage scaling is skipped even if a<br />
+  frequency switch is attempted.                                                                                                                                                            </p>
+<p>Consequence: Clock scaling without voltage scaling → potential timing violations or running below required voltage margin.                                                                </p>
+<hr />
+<ol>
+<li>Complex Hierarchical Device Topology Flattened               </li>
+</ol>
+<p>DT expresses QUP → SE hierarchy, clock parents, power domain graphs. ACPI DSDT represents flat platform devices. Drivers that assume se-&gt;wrapper is non-NULL (parent QUP wrapper device)<br />
+  crash.                                                                                                                                                                                    </p>
+<p>Consequence: Every subsystem driver that traverses parent-child device hierarchy needs an explicit ACPI guard. This is not one fix — it is a sustained per-driver porting effort.         </p>
+<hr />
+<ol>
+<li>No ACPI Support for Qualcomm-Specific Subsystems (PIL, remoteproc, etc.)</li>
+</ol>
+<p>Peripheral image loading (qcom_pil_info.c, remoteproc) for ADSP, CDSP, MPSS is entirely DT-based. ACPI has no equivalent of the qcom,pil-* compatible binding chain.</p>
+<p>Consequence: DSP subsystems (audio, compute, modem) cannot be loaded or managed by Linux in ACPI mode. UEFI handles PIL at boot but dynamic load/unload is impossible.                    </p>
+<hr />
+<ol>
+<li>Thermal Management — Partial                                 </li>
+</ol>
+<p>qcom-spmi-temp-alarm.c, tsens.c bind via DT. In ACPI mode thermal zone definitions (_TZ, _TSP) would be needed in DSDT plus SCMI sensor protocol for AOSS-reported temperatures. Neither<br />
+  is present.                                                                                                                                                                               </p>
+<p>Consequence: Only basic ACPI thermal zones (if defined in DSDT) work. No Qualcomm-specific junction temperature sensors → no fine-grained thermal throttling.                             </p>
+<hr />
+<ol>
+<li>Why Qualcomm Is Structurally Behind (Root Cause)            </li>
+</ol>
+<p>┌────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐<br />
+  │                     Reason                     │                                                               Detail                                                               │ <br />
+  ├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ Android/DT is the revenue product              │ Phones/tablets use DT exclusively. ACPI only needed for Windows laptops (X Elite) and servers — recent requirement.                │ <br />
+  ├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ RPMh uses proprietary TCS protocol             │ Wrapping in SCMI requires AOSS firmware update + full multi-subsystem validation — not just a kernel patch.                        │ <br />
+  ├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ ICC is architecturally DT-by-design            │ Every upstream Qualcomm ICC driver calls of_icc_get(). Refactoring requires new ACPI ICC backend in upstream kernel.               │ <br />
+  ├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤ <br />
+  │ Snapdragon X Elite is the only upstream        │ qcom-cpufreq-hw ACPI support merged. ICC ACPI backend proposed but not merged. RPMh SCMI firmware (AOSS side) remains              │<br />
+  │ catalyst                                       │ Qualcomm-internal.                                                                                                                 │ <br />
+  └────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘</p>
+<hr />
+<p>Summary: Full ACPI on Qualcomm is gated on AOSS firmware shipping a SCMI server (Gap 2 above). Everything else — ICC backend, OPP ACPI equivalent, clock ACPI binding — can be patched in<br />
+  the kernel, but without SCMI server-side support in AOSS, none of the dynamic resource management (DDR BW voting, GPU/clock scaling, thermal) can work in ACPI mode.</p>
+</div>
+</body>
+</html>
