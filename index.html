@@ -112,7 +112,7 @@ hr{border:none;border-top:1px solid #21262d;margin:28px 0}
 <li class="toc-l3"><a href="#64-ramdisk-uart21-ssdt-injection-workaround">6.4 Ramdisk — UART21 SSDT Injection (Workaround)</a></li>
 <li class="toc-l3"><a href="#65-kernel-command-line">6.5 Kernel Command Line</a></li>
 <li class="toc-l2"><a href="#7-dt-vs-acpi-mode-comparison">7. DT vs ACPI Mode Comparison</a></li>
-<li class="toc-l2"><a href="#8-glymur-crd-dt-acpi-peripheral-summary">8. Glymur CRD DT — ACPI Peripheral Summary</a></li>
+<li class="toc-l2"><a href="#8-glymur-crd-dt-vs-acpi-peripheral-summary">8. Glymur-CRD DT vs ACPI Peripheral Summary</a></li>
 <li class="toc-l2"><a href="#9-missing-tables-that-can-be-introduced-purely-in-uefi">9. Missing tables that can be introduced purely in UEFI</a></li>
 <li class="toc-l2"><a href="#10-acpi-power-and-resource-management">10. ACPI Power and Resource Management</a></li>
 <li class="toc-l2"><a href="#11-limitaions-of-full-acpi-on-qualcomm-socs">11. Limitaions of Full ACPI on Qualcomm SoCs</a></li>
@@ -753,6 +753,50 @@ Result:
 - MMIO base: <code>0x894000</code> (size <code>0x4000</code>)<br />
 - IRQ: <code>619</code> (<code>0x26B</code>)<br />
 - <code>_HID = "QCOM0E02"</code> (matched by <code>qcom_geni_serial</code> <code>acpi_match_table</code>)</p>
+<p><strong>Reference — uart21_ssdt.dsl:</strong></p>
+<pre><code>/*
+ * Intel ACPI Component Architecture
+ * AML/ASL+ Disassembler version 20230628 (64-bit version)
+ * Copyright (c) 2000 - 2023 Intel Corporation
+ * Original Table Header:
+ *     Signature        "SSDT"
+ *     Length           0x00000079 (121)
+ *     Revision         0x02
+ *     Checksum         0x4C
+ *     OEM ID           "QCOM  "
+ *     OEM Table ID     "UART21  "
+ *     OEM Revision     0x00000002 (2)
+ *     Compiler ID      "INTL"
+ *     Compiler Version 0x20230628 (539166248)
+ */
+DefinitionBlock ("", "SSDT", 2, "QCOM  ", "UART21  ", 0x00000002)
+{
+    Scope (\_SB)
+    {
+        Device (QURC)
+        {
+            Name (_HID, "QCOM0E02")  // _HID: Hardware ID
+            Name (_UID, Zero)  // _UID: Unique ID
+            Name (_CCA, Zero)  // _CCA: Cache Coherency Attribute
+            Method (_STA, 0, NotSerialized)  // _STA: Status
+            {
+                Return (0x0F)
+            }
+
+            Name (_CRS, ResourceTemplate ()  // _CRS: Current Resource Settings
+            {
+                Memory32Fixed (ReadWrite,
+                    0x00894000,         // Address Base
+                    0x00004000,         // Address Length
+                    )
+                Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive, ,, )
+                {
+                    0x0000026B,
+                }
+            })
+        }
+    }
+}</code></pre>
 <p>compilation procedure:<br />
 you need to create peripheral dsl file as per schematic and property (uart21_ssdt.dsl)<br />
 iasl uart21_ssdt.dsl -&gt; uart21_ssdt.aml --&gt; compile dsl file and generate aml.<br />
@@ -900,7 +944,7 @@ ignore_loglevel
 </tbody>
 </table>
 <hr />
-<h2 id="8-glymur-crd-dt-acpi-peripheral-summary">8. Glymur CRD DT — ACPI Peripheral Summary</h2>
+<h2 id="8-glymur-crd-dt-vs-acpi-peripheral-summary">8. Glymur-CRD DT vs ACPI Peripheral Summary</h2>
 <p><em>All SSDT-driven peripherals can be permanently added to the UEFI ACPI table.</em><br />
 <strong>Driver-bound peripheral</strong> (needs SSDT + driver ACPI match) — the kernel driver probes the device from an ACPI namespace entry. Linux needs:</p>
 <ul>
@@ -966,8 +1010,8 @@ ignore_loglevel
 <tr><td>mdss (display)</td><td>okay (CRD override)</td><td class="col-mono">0xae00000</td><td>⚠ Yes — DT-only</td><td>❌ No ACPI path today</td></tr>
 <tr><td>lpass (audio)</td><td>enabled (CRD)</td><td class="col-mono">0x6ca0000</td><td>⚠ Yes — DT-only</td><td>❌ No ACPI path today</td></tr>
 <tr><td>remoteproc_adsp</td><td>okay (CRD override)</td><td class="col-mono">0x6800000</td><td>⚠ Yes — qcom remoteproc DT-only</td><td>❌ UEFI handles PIL load at boot; dynamic reload not possible in ACPI</td></tr>
-<tr><td>remoteproc_cdsp</td><td>okay (CRD override)</td><td class="col-mono">0x32300000</td><td>⚠ Yes — DT-only</td><td>❌ Same</td></tr>
-<tr><td>remoteproc_soccp</td><td>okay (CRD override)</td><td class="col-mono">0xd00000</td><td>⚠ Yes — DT-only</td><td>❌ Same</td></tr>
+<tr><td>remoteproc_cdsp</td><td>okay (CRD override)</td><td class="col-mono">0x32300000</td><td>⚠ Yes — DT-only</td><td>❌ No ACPI path today</td></tr>
+<tr><td>remoteproc_soccp</td><td>okay (CRD override)</td><td class="col-mono">0xd00000</td><td>⚠ Yes — DT-only</td><td>❌ No ACPI path today</td></tr>
 <tr><td>tsens0–7</td><td>enabled (default)</td><td class="col-mono">0xc22c000+</td><td>⚠ Yes — <code>qcom-tsens.c</code> DT-only</td><td>❌ Needs DSDT thermal zones + SCMI sensor protocol</td></tr>
 </tbody></table></div>
 <hr />
@@ -1237,33 +1281,6 @@ ignore_loglevel
 <p>qcom-spmi-temp-alarm.c, tsens.c bind via DT. In ACPI mode thermal zone definitions (_TZ, _TSP) would be needed in DSDT plus SCMI sensor protocol for AOSS-reported temperatures. Neither<br />
   is present.                                                                                                                                                                               </p>
 <p>Consequence: Only basic ACPI thermal zones (if defined in DSDT) work. No Qualcomm-specific junction temperature sensors → no fine-grained thermal throttling.                             </p>
-<hr />
-<ol start="10">
-<li>Why Qualcomm Is Structurally Behind (Root Cause)            </li>
-</ol>
-<p><div class="data-table-wrap">
-<div class="cat-label">Root Cause Analysis</div>
-<table class="data-table"><thead><tr>
-<th>Reason</th>
-<th>Detail</th>
-</tr></thead><tbody>
-<tr>
-<td class="col-wide">Android/DT is the revenue product</td>
-<td class="col-desc">Phones/tablets use DT exclusively. ACPI only needed for Windows laptops (Snapdragon X Elite) and servers — recent requirement.</td>
-</tr>
-<tr>
-<td class="col-wide">RPMh uses proprietary TCS protocol</td>
-<td class="col-desc">Wrapping in SCMI requires AOSS firmware update + full multi-subsystem validation — not just a kernel patch.</td>
-</tr>
-<tr>
-<td class="col-wide">ICC is architecturally DT-by-design</td>
-<td class="col-desc">Every upstream Qualcomm ICC driver calls <code>of_icc_get()</code>. Refactoring requires new ACPI ICC backend in upstream kernel.</td>
-</tr>
-<tr>
-<td class="col-wide">Snapdragon X Elite is the only upstream catalyst</td>
-<td class="col-desc"><code>qcom-cpufreq-hw</code> ACPI support merged. ICC ACPI backend proposed but not merged. RPMh SCMI firmware (AOSS side) remains Qualcomm-internal.</td>
-</tr>
-</tbody></table></div>
 <hr />
 <p style="margin-top:40px;color:#8b949e;font-style:italic;">Thank you for Reading<br />/Pradyot</p>
 </div>
